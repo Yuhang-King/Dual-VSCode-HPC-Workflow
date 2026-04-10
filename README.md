@@ -1,6 +1,8 @@
 # Dual-VSCode-HPC-Workflow
 
 > 目标：新版本 VS Code 负责本地开发和 Codex，旧版本 VS Code 单独负责通过 Remote-SSH 连接老集群，做到本地与远端并行工作、互不干扰。
+>
+> 文中的用户名、主机名、IP 和路径均使用占位符，请按自己的环境替换。
 
 ## 一页结论
 
@@ -45,8 +47,8 @@
 ```text
 D:\
 ├─ VSCode-New\                           # 新版本，日常本地开发
-└─ VSCode-CQJF\
-   ├─ launch_cqjf_vscode.bat            # 旧版专用启动脚本（可选）
+└─ VSCode-Legacy-SSH\
+   ├─ launch_legacy_ssh_vscode.bat      # 旧版专用启动脚本（可选）
    └─ VSCode-win32-x64-1.98.2\
       ├─ Code.exe
       └─ data\                          # Portable Mode 关键目录
@@ -66,13 +68,13 @@ D:\
 2. 解压到：
 
 ```text
-D:\VSCode-CQJF\VSCode-win32-x64-1.98.2
+D:\VSCode-Legacy-SSH\VSCode-win32-x64-1.98.2
 ```
 
 3. 确认以下文件存在：
 
 ```text
-D:\VSCode-CQJF\VSCode-win32-x64-1.98.2\Code.exe
+D:\VSCode-Legacy-SSH\VSCode-win32-x64-1.98.2\Code.exe
 ```
 
 4. 在 `Code.exe` 同级创建空文件夹 `data`。
@@ -83,7 +85,7 @@ D:\VSCode-CQJF\VSCode-win32-x64-1.98.2\Code.exe
 文件路径：
 
 ```text
-D:\VSCode-CQJF\VSCode-win32-x64-1.98.2\data\user-data\User\settings.json
+D:\VSCode-Legacy-SSH\VSCode-win32-x64-1.98.2\data\user-data\User\settings.json
 ```
 
 建议内容如下：
@@ -99,7 +101,7 @@ D:\VSCode-CQJF\VSCode-win32-x64-1.98.2\data\user-data\User\settings.json
   "window.restoreWindows": "none",
   "extensions.ignoreRecommendations": true,
   "update.showReleaseNotes": false,
-  "remote.SSH.configFile": "C:\\Users\\wangyuhang\\.ssh\\config",
+  "remote.SSH.configFile": "C:\\Users\\<your-windows-username>\\.ssh\\config",
   "python.useEnvironmentsExtension": false
 }
 ```
@@ -117,7 +119,7 @@ D:\VSCode-CQJF\VSCode-win32-x64-1.98.2\data\user-data\User\settings.json
 ```bat
 @echo off
 setlocal
-set VSCODE_HOME=D:\VSCode-CQJF\VSCode-win32-x64-1.98.2
+set VSCODE_HOME=D:\VSCode-Legacy-SSH\VSCode-win32-x64-1.98.2
 set VSCODE_EXE=%VSCODE_HOME%\Code.exe
 if not exist "%VSCODE_EXE%" (
   echo [ERROR] Code.exe not found: %VSCODE_EXE%
@@ -138,22 +140,22 @@ exit /b 0
 SSH 配置文件：
 
 ```text
-C:\Users\<your user name>\.ssh\config
+C:\Users\<your-windows-username>\.ssh\config
 ```
 
 示例：
 
 ```sshconfig
-Host cqjf9
-  HostName 10.144.65.9
-  User <your user name>
+Host hpc-login
+  HostName <cluster-login-host-or-ip>
+  User <your-ssh-username>
   Port 22
 ```
 
 先在 Windows 终端测试：
 
 ```powershell
-ssh cqjf9
+ssh hpc-login
 ```
 
 判断标准：
@@ -169,11 +171,11 @@ ssh cqjf9
    - `Python`
    - `Jupyter`（只有确实需要 Notebook 时再装）
 3. 按 `Ctrl+Shift+P`，执行 `Remote-SSH: Connect to Host...`
-4. 选择 `cqjf9` 或你的实际主机名。
+4. 选择 `hpc-login` 或你实际配置的主机别名。
 5. 第一次输入登录密码。
 6. 第二次输入双因素验证码。
 7. 如果看到 unsupported OS 警告，点击 `Allow`。
-8. 连接成功后，左下角应该显示 `SSH: cqjf9`。
+8. 连接成功后，左下角应该显示 `SSH: hpc-login`。
 
 ### 为什么新版会失败
 
@@ -202,8 +204,8 @@ pkill -f "code-server" || true
 pkill -f ".vscode-server" || true
 
 rm -rf ~/.vscode-server ~/.vscode-remote
-mkdir -p /<your project path>/.vscode-server
-ln -sfn /<your project path>/.vscode-server ~/.vscode-server
+mkdir -p /path/to/your/project/.vscode-server
+ln -sfn /path/to/your/project/.vscode-server ~/.vscode-server
 
 ls -la ~/.vscode-server
 readlink -f ~/.vscode-server
@@ -234,7 +236,7 @@ which python
 3. 手动填写解释器路径，例如：
 
 ```text
-/<your path to python>/bin/python
+/path/to/your/conda-env/bin/python
 ```
 
 如果出现下面这类报错：
@@ -254,7 +256,7 @@ which python
 
 ```json
 {
-  "python.defaultInterpreterPath": "/<your path to python>/python"
+  "python.defaultInterpreterPath": "/path/to/your/conda-env/bin/python"
 }
 ```
 
@@ -263,7 +265,7 @@ which python
 先在远端环境中安装：
 
 ```bash
-conda activate /<your path to conda env>/
+conda activate /path/to/your/conda-env
 conda install jupyter ipykernel
 # 或者
 pip install jupyter ipykernel
@@ -309,7 +311,7 @@ rm -rf ~/.vscode-server ~/.vscode-remote
 
 检查两件事：
 
-- `C:\Users\<your user name>\.ssh\config` 是否还在
+- `C:\Users\<your-windows-username>\.ssh\config` 是否还在
 - `settings.json` 中的 `remote.SSH.configFile` 是否仍然指向这份文件
 
 ### 4. 打开旧版后自动恢复上次远程窗口并报错
@@ -340,7 +342,7 @@ pkill -f vscode || true
 pkill -f "code-server" || true
 pkill -f ".vscode-server" || true
 rm -rf ~/.vscode-server ~/.vscode-remote
-ln -sfn /<your project path>/.vscode-server ~/.vscode-server
+ln -sfn /path/to/your/project/.vscode-server ~/.vscode-server
 
 # 查看空间
 du -sh ~
@@ -357,7 +359,7 @@ taskkill /F /IM ssh.exe
 - 安装新版本 VS Code，只用于本地开发和 Codex。
 - 下载旧版 `1.98.2` ZIP，解压到单独目录，并创建 `data` 文件夹。
 - 配置旧版 `settings.json`，锁定更新和扩展行为。
-- 配置 `C:\Users\wangyuhang\.ssh\config`。
+- 配置 `C:\Users\<your-windows-username>\.ssh\config`。
 - 用旧版 Remote-SSH 连接老集群并通过双因素认证。
 - 把 `~/.vscode-server` 迁到大盘并建立软链接。
 - 打开远端项目目录，尽量少装扩展。
